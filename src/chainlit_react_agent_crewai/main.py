@@ -94,7 +94,7 @@ agent_executor = create_react_agent(model, tools, prompt=prompt, checkpointer=me
 async def on_message(message: cl.Message):
     final_answer = cl.Message(content="")
 
-    for step, metadata in agent_executor.stream(
+    async for step, metadata in agent_executor.astream(
         {"messages": [HumanMessage(content=message.content)]},
         config={"configurable": {"thread_id": cl.context.session.id}},
         stream_mode="messages"
