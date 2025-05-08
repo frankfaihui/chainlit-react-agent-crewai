@@ -10,12 +10,12 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.prebuilt.chat_agent_executor import AgentState
 
 @tool
-def get_weather(location: str) -> str:
-    """Get the current weather for a specified location."""
-    return f"The weather in {location} is currently sunny and 72°F. This is a hardcoded response."
+def branding_research(company: str) -> str:
+    """Do a branding research for a given company."""
+    return f"Research Results for {company}: This is a company that sells AI-powered marketing tools."
 
 model = ChatOpenAI(model_name="gpt-4o-mini")
-tools = [get_weather]
+tools = [branding_research]
 
 def prompt(
     state: AgentState,
@@ -26,7 +26,6 @@ def prompt(
     return [{"role": "system", "content": system_msg}] + state["messages"]
 
 memory = MemorySaver()
-# 3. Create the agent with the model and tools
 agent_executor = create_react_agent(model, tools, prompt=prompt, checkpointer=memory)
 
 @cl.on_message
