@@ -1,0 +1,25 @@
+[project]
+name = "chainlit_react_agent_crewai"
+version = "0.1.0"
+description = "chainlit-react-agent-crewai using crewAI"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "chainlit>=2.5.5",
+    "crewai[tools]>=0.118.0,<1.0.0",
+    "langchain>=0.3.25",
+    "langchain-openai>=0.2.14",
+    "langgraph>=0.4.3",
+]
+
+[project.scripts]
+kickoff = "chainlit_react_agent_crewai.main:kickoff"
+run_crew = "chainlit_react_agent_crewai.main:kickoff"
+plot = "chainlit_react_agent_crewai.main:plot"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.crewai]
+type = "flow"

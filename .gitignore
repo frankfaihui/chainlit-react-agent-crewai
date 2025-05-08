@@ -1,0 +1,38 @@
+# Python
+.env
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+.python-version
+*.so
+dist/
+build/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Chainlit
+.chainlit/
+chainlit.md
+
+# Logs
+logs/
+*.log
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# CrewAI
+crew_runs/
+agent_outputs/
