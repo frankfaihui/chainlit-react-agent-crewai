@@ -11,53 +11,33 @@ from langchain_core.messages import AnyMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.prebuilt.chat_agent_executor import AgentState
 
-# Pydantic model for company information
-class CompanyInfo(BaseModel):
-    name: str = Field(..., description="The name of the company")
-    industry: str = Field(..., description="The industry the company operates in")
-    target_audience: Optional[str] = Field(None, description="The target audience or customer segment")
-    competitors: Optional[List[str]] = Field(None, description="List of main competitors")
-    unique_selling_points: Optional[List[str]] = Field(None, description="Key unique selling points or value propositions")
-    years_in_business: Optional[int] = Field(None, description="Number of years the company has been in business")
+from crews.branding_research_crew.crew import BrandingResearchCrew
+
+class BrandingResearchInfo(BaseModel):
+    company: str = Field(..., description="The company name")
+    topic: str = Field(..., description="The topic of the research")
     
     class Config:
         schema_extra = {
             "example": {
-                "name": "TechAI",
-                "industry": "AI Software",
-                "target_audience": "Small to medium businesses",
-                "competitors": ["AICompany", "SmartTools Inc."],
-                "unique_selling_points": ["User-friendly interface", "Affordable pricing"],
-                "years_in_business": 5
+                "company": "TechAI",
+                "topic": "AI marketing trends"
             }
         }
 
 model = ChatOpenAI(model_name="gpt-4o-mini")
 
 # Agent functions that will be called as tools
-def branding_research_agent(state: Annotated[dict, InjectedState], company: CompanyInfo) -> str:
+def branding_research_agent(state: Annotated[dict, InjectedState], info: BrandingResearchInfo) -> str:
     """Do a branding research for a given company with detailed information."""
-    # You can use state to access the full agent state if needed
-    
-    # Now we have access to detailed structured information about the company
-    research_results = f"Research Results for {company.name}:\n"
-    research_results += f"- Industry: {company.industry}\n"
-    
-    if company.target_audience:
-        research_results += f"- Target Audience: {company.target_audience}\n"
-    
-    if company.competitors:
-        research_results += f"- Main Competitors: {', '.join(company.competitors)}\n"
-    
-    if company.unique_selling_points:
-        research_results += f"- Unique Selling Points: {', '.join(company.unique_selling_points)}\n"
-    
-    if company.years_in_business:
-        research_results += f"- Company Maturity: {company.years_in_business} years in business\n"
-    
-    research_results += "\nRecommended Branding Approach: Based on the information provided, focus on highlighting the company's unique selling points in marketing materials and differentiate from competitors through targeted messaging for the specific audience."
-    
-    return research_results
+    crew = BrandingResearchCrew().crew()
+    # Ensure topic and company are properly passed
+    inputs = {
+        "company": info.company,
+        "topic": info.topic
+    }
+    result = crew.kickoff(inputs)
+    return result.raw
 
 def develop_strategy_agent(state: Annotated[dict, InjectedState], target_audience: str) -> str:
     """Develop a marketing strategy based on research findings and campaign objectives."""
