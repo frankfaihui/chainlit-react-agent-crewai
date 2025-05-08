@@ -16,6 +16,5 @@ services:
       - ./src:/app/src
       - ./chainlit.md:/app/chainlit.md
       - ./.chainlit:/app/.chainlit
-    restart: unless-stopped
-    # Use this command to enable hot reloading in development
-    command: ["chainlit", "run", "src/chainlit_react_agent_crewai/main.py", "--port", "8080", "--host", "0.0.0.0", "--watch"] 
+    # Use shell form of command to enable hot reloading in development
+    command: chainlit run src/chainlit_react_agent_crewai/main.py --port 8080 --host 0.0.0.0 --watch 

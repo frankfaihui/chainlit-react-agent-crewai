@@ -32,8 +32,8 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []
 
-# Run the Chainlit application
-CMD ["chainlit", "run", "src/chainlit_react_agent_crewai/main.py", "--port", "$PORT", "--host", "$HOST"]
+# Use shell form of CMD to properly expand environment variables
+CMD chainlit run src/chainlit_react_agent_crewai/main.py --port $PORT --host $HOST
 
 # Expose the port
 EXPOSE 8080 
