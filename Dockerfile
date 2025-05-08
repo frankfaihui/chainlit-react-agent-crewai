@@ -14,17 +14,17 @@ ENV UV_LINK_MODE=copy
 ENV PORT=8000
 ENV HOST=0.0.0.0
 
-# Install the project's dependencies using the lockfile and settings
-RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --frozen --no-install-project
+# Copy project files first
+COPY pyproject.toml uv.lock ./
 
-# Then, add the rest of the project source code and install it
-# Installing separately from its dependencies allows optimal layer caching
-COPY . /app
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen
+# Install dependencies without using BuildKit mounts
+RUN uv sync --frozen --no-install-project
+
+# Copy the rest of the application
+COPY . .
+
+# Install the project
+RUN uv sync --frozen
 
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
