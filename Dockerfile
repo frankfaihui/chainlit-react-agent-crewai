@@ -11,7 +11,7 @@ ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
 
 # Set environment variables for Google Cloud Run
-ENV PORT=8000
+ENV PORT=8080
 ENV HOST=0.0.0.0
 
 # Copy project files first
@@ -36,4 +36,4 @@ ENTRYPOINT []
 CMD ["chainlit", "run", "src/chainlit_react_agent_crewai/main.py", "--port", "$PORT", "--host", "$HOST"]
 
 # Expose the port
-EXPOSE 8000 
+EXPOSE 8080 
