@@ -12,32 +12,53 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.prebuilt.chat_agent_executor import AgentState
 
 from crews.branding_research_crew.crew import BrandingResearchCrew
+from crewai.task import TaskOutput
 
 class BrandingResearchInfo(BaseModel):
     company: str = Field(..., description="The company name")
     topic: str = Field(..., description="The topic of the research")
-    
-    class Config:
-        schema_extra = {
-            "example": {
-                "company": "TechAI",
-                "topic": "AI marketing trends"
-            }
-        }
-
-model = ChatOpenAI(model_name="gpt-4o-mini")
 
 # Agent functions that will be called as tools
 def branding_research_agent(state: Annotated[dict, InjectedState], info: BrandingResearchInfo) -> str:
     """Do a branding research for a given company with detailed information."""
-    crew = BrandingResearchCrew().crew()
-    # Ensure topic and company are properly passed
-    inputs = {
-        "company": info.company,
-        "topic": info.topic
-    }
-    result = crew.kickoff(inputs)
-    return result.raw
+
+    # Create a message to track progress
+    progress_message = cl.run_sync(
+        cl.Message(content="Starting branding research...").send()
+    )
+
+    try:
+        # Create a callback function to update progress
+        def on_task_callback(task_output: TaskOutput):
+            step_agent = task_output.agent if task_output.agent else "Agent"
+            step_task = task_output.name if task_output.name else "task"
+            
+            cl.run_sync(
+                cl.Message(content=f"Agent: {step_agent} is working on task: {step_task}...").send()
+            )
+
+        # Create the crew with callback
+        crew = BrandingResearchCrew().crew()
+        crew.task_callback = on_task_callback
+
+        # Run the crew
+        inputs = info.model_dump()
+        result = crew.kickoff(inputs)
+        
+
+        cl.run_sync(
+            cl.Message(content=f"Research completed!").send()
+        )
+
+        return result.raw
+    
+    except Exception as e:
+
+        cl.run_sync(
+            cl.Message(content=f"Error: {e}").send()
+        )
+
+        return f"Error: {e}"
 
 def develop_strategy_agent(state: Annotated[dict, InjectedState], target_audience: str) -> str:
     """Develop a marketing strategy based on research findings and campaign objectives."""
@@ -67,6 +88,7 @@ def prompt(
     system_msg = f"You are a knowledgeable and friendly assistant specialized in marketing. Your job is to help users with questions strictly related to marketing. If users ask about anything else, politely steer the conversation back to marketing topics."
     return [{"role": "system", "content": system_msg}] + state["messages"]
 
+model = ChatOpenAI(model_name="gpt-4o-mini")
 memory = MemorySaver()
 agent_executor = create_react_agent(model, tools, prompt=prompt, checkpointer=memory)
 
