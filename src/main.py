@@ -11,20 +11,20 @@ from langchain_core.messages import AnyMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.prebuilt.chat_agent_executor import AgentState
 
-from crews.branding_research_crew.crew import BrandingResearchCrew
+from crews.brand_research_crew.crew import BrandResearchCrew
 from crewai.task import TaskOutput
 
-class BrandingResearchInfo(BaseModel):
+class BrandResearchInfo(BaseModel):
     company: str = Field(..., description="The company name")
     topic: str = Field(..., description="The topic of the research")
 
 # Agent functions that will be called as tools
-def branding_research_agent(state: Annotated[dict, InjectedState], info: BrandingResearchInfo) -> str:
+def brand_research_agent(state: Annotated[dict, InjectedState], info: BrandResearchInfo) -> str:
     """Do a branding research for a given company with detailed information."""
 
     # Create a message to track progress
     progress_message = cl.run_sync(
-        cl.Message(content="Starting branding research...").send()
+        cl.Message(content="Starting brand research...").send()
     )
 
     try:
@@ -38,7 +38,7 @@ def branding_research_agent(state: Annotated[dict, InjectedState], info: Brandin
             )
 
         # Create the crew with callback
-        crew = BrandingResearchCrew().crew()
+        crew = BrandResearchCrew().crew()
         crew.task_callback = on_task_callback
 
         # Run the crew
@@ -77,7 +77,7 @@ def execute_campaign_agent(state: Annotated[dict, InjectedState], channels: str)
     return f"Campaign Execution Report for channels '{channels}': Campaign launched successfully across specified channels. Initial metrics show 15% engagement rate. Weekly performance reports scheduled for stakeholder review."
 
 # https://langchain-ai.github.io/langgraph/concepts/multi_agent/#supervisor-tool-calling
-tools = [branding_research_agent, develop_strategy_agent, generate_campaign_brief_agent, 
+tools = [brand_research_agent, develop_strategy_agent, generate_campaign_brief_agent, 
          validate_campaign_agent, execute_campaign_agent]
 
 def prompt(

@@ -9,8 +9,8 @@ from crewai_tools import SerperDevTool
 
 
 @CrewBase
-class BrandingResearchCrew:
-    """BrandingResearchCrew crew"""
+class BrandResearchCrew:
+    """BrandResearchCrew crew"""
 
     agents_config = "config/agents.yaml"
     tasks_config = "config/tasks.yaml"
@@ -19,7 +19,7 @@ class BrandingResearchCrew:
     def researcher(self) -> Agent:
         return Agent(
             config=self.agents_config["researcher"],
-            tools=[],
+            tools=[SerperDevTool()],
             verbose=True,
         )
 
@@ -41,7 +41,7 @@ class BrandingResearchCrew:
 
     @crew
     def crew(self) -> Crew:
-        """Creates the CrewaiEnterpriseContentMarketing crew"""
+        """Creates the BrandResearchCrew"""
         return Crew(
             agents=self.agents,  # Automatically created by the @agent decorator
             tasks=self.tasks,  # Automatically created by the @task decorator
