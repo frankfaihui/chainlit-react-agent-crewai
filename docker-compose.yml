@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  chainlit-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      # For development, mount the source code for live reloading
+      - ./src:/app/src
+      - ./chainlit.md:/app/chainlit.md
+      - ./.chainlit:/app/.chainlit
+    restart: unless-stopped
+    # Use this command to enable hot reloading in development
+    command: ["chainlit", "run", "src/chainlit_react_agent_crewai/main.py", "--port", "8000", "--host", "0.0.0.0", "--watch"] 
