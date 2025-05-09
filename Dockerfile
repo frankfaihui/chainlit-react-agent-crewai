@@ -10,10 +10,6 @@ ENV UV_COMPILE_BYTECODE=1
 # Copy from the cache instead of linking since it's a mounted volume
 ENV UV_LINK_MODE=copy
 
-# Set environment variables for Google Cloud Run
-ENV PORT=8080
-ENV HOST=0.0.0.0
-
 # Copy project files first
 COPY pyproject.toml uv.lock ./
 
@@ -32,8 +28,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []
 
-# Use shell form of CMD to properly expand environment variables
-CMD chainlit run src/chainlit_react_agent_crewai/main.py --port $PORT --host $HOST
+CMD ["chainlit", "run", "src/main.py", "--port", "8080", "--host", "0.0.0.0"]
 
 # Expose the port
-EXPOSE 8080 
+EXPOSE 8080
