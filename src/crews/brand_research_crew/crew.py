@@ -16,27 +16,27 @@ class BrandResearchCrew:
     tasks_config = "config/tasks.yaml"
 
     @agent
-    def researcher(self) -> Agent:
+    def brand_research_agent(self) -> Agent:
         return Agent(
-            config=self.agents_config["researcher"],
+            config=self.agents_config["brand_research_agent"],
             tools=[SerperDevTool()],
             verbose=True,
         )
 
     @agent
-    def content_generator(self) -> Agent:
-        return Agent(config=self.agents_config["content_generator"], verbose=True)
+    def strategy_agent(self) -> Agent:
+        return Agent(config=self.agents_config["strategy_agent"], verbose=True)
 
     @task
-    def research_task(self) -> Task:
+    def brand_research_task(self) -> Task:
         return Task(
-            config=self.tasks_config["research_task"],
+            config=self.tasks_config["brand_research_task"],
         )
 
     @task
-    def content_generation_task(self) -> Task:
+    def strategy_task(self) -> Task:
         return Task(
-            config=self.tasks_config["content_generation_task"]
+            config=self.tasks_config["strategy_task"]
         )
 
     @crew
