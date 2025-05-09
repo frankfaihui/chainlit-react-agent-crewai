@@ -16,7 +16,6 @@ from crewai.task import TaskOutput
 
 class BrandResearchInfo(BaseModel):
     company: str = Field(..., description="The company name")
-    topic: str = Field(..., description="The topic of the research")
 
 # Agent functions that will be called as tools
 def brand_research_agent(state: Annotated[dict, InjectedState], info: BrandResearchInfo) -> str:

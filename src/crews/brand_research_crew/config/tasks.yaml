@@ -1,13 +1,15 @@
 brand_research_task:
   description: >
-    Gather information on brand history, values, competitors, and target demographics.
+    Gather information on {company}'s brand history, values, competitors, and target demographics.
   expected_output: >
-    A comprehensive report with key findings and recommendations.
+    A comprehensive report with key findings and recommendations for {company}.
   agent: brand_research_agent
 
 strategy_task:
   description: >
-    Formulate a marketing strategy based on the research insights and campaign goals.
+    Formulate a marketing strategy for {company} based on the research insights and campaign goals.
   expected_output: >
-    A detailed marketing plan with clear objectives, target audience, key messages,
+    A detailed marketing plan for {company} with clear objectives, target audience, key messages,
   agent: strategy_agent
+  context:
+    - brand_research_task
