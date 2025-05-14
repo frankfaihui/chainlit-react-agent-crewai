@@ -1,5 +1,6 @@
 import chainlit as cl
-
+import requests
+import os
 from typing import Annotated, List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 from langchain_openai import ChatOpenAI
@@ -79,13 +80,80 @@ def validate_campaign_agent(state: Annotated[dict, InjectedState], brief: str) -
     """Facilitate human review and approval of the campaign brief."""
     return f"Validation Report for '{brief}': Campaign brief approved with minor adjustments to tone. Ensure all creative assets maintain consistent branding. Ready for execution upon final stakeholder sign-off."
 
-def google_ads_campaign_agent(state: Annotated[dict, InjectedState], channels: str) -> str:
-    """Manage google ads campaigns"""
-    return f"Campaign Execution Report for channels '{channels}': Campaign launched successfully across specified channels. Initial metrics show 15% engagement rate. Weekly performance reports scheduled for stakeholder review."
+class GoogleAdsCampaignInfo(BaseModel):
+    login_customer_id: Optional[str] = Field(os.getenv("GOOGLE_ADS_LOGIN_CUSTOMER_ID"), description="The Google Ads Manager Account ID")
+
+def google_ads_campaign_agent(state: Annotated[dict, InjectedState], config: RunnableConfig, info: GoogleAdsCampaignInfo) -> str:
+    """Manage google ads campaigns, get customers"""
+    import requests
+    
+    login_customer_id = info.login_customer_id
+    
+    # Get the token from config
+    token = config["configurable"].get("token")
+    if not token:
+        return "Error: Authorization token not found in config"
+    
+    # Get request to fetch accessible customers
+    url = f"https://my-google-ads-flask-29233987206.us-west1.run.app/google-ads/customers"
+    params = {"login_customer_id": login_customer_id}
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    try:
+        response = requests.get(url, params=params, headers=headers)
+        response.raise_for_status()  # Raise exception for non-2xx responses
+        
+        # Parse the JSON response
+        customer_data = response.json()
+        
+        # # Format the output
+        # result = f"Successfully retrieved accessible customers for manager account ID: {login_customer_id}.\n\nAccessible Customers:\n"
+        
+        # # Add each customer to the result
+        # for customer in customer_data.get("customers", []):
+        #     result += f"- Customer ID: {customer.get('id')}, Name: {customer.get('name')}\n"
+        
+        return customer_data
+    
+    except requests.exceptions.RequestException as e:
+        return f"Error accessing Google Ads API: {str(e)}"
+    except ValueError as e:
+        return f"Error parsing response from Google Ads API: {str(e)}"
+
+
+def get_campaigns(state: Annotated[dict, InjectedState], config: RunnableConfig, customer_id: str) -> str:
+    """Get campaigns for a specific customer account"""
+    import requests
+    
+    login_customer_id = os.getenv("GOOGLE_ADS_LOGIN_CUSTOMER_ID")
+   
+    # Get the token from config
+    token = config["configurable"].get("token")
+    if not token:
+        return "Error: Authorization token not found in config"
+    
+    # Get request to fetch campaigns
+    url = f"https://my-google-ads-flask-29233987206.us-west1.run.app/google-ads/customers/{customer_id}/campaigns"
+    params = {"login_customer_id": login_customer_id}
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    try:
+        response = requests.get(url, params=params, headers=headers)
+        response.raise_for_status()  # Raise exception for non-2xx responses
+        
+        # Parse the JSON response
+        campaign_data = response.json()
+        
+        return campaign_data
+    
+    except requests.exceptions.RequestException as e:
+        return f"Error accessing Google Ads API: {str(e)}"
+    except ValueError as e:
+        return f"Error parsing response from Google Ads API: {str(e)}"
 
 # https://langchain-ai.github.io/langgraph/concepts/multi_agent/#supervisor-tool-calling
 tools = [brand_research_agent, develop_strategy_agent, generate_campaign_brief_agent, 
-         validate_campaign_agent, google_ads_campaign_agent]
+         validate_campaign_agent, google_ads_campaign_agent, get_campaigns]
 
 def prompt(
     state: AgentState,
@@ -150,7 +218,7 @@ async def on_message(message: cl.Message):
         config={
             "configurable": {
                 "thread_id": cl.context.session.id,
-                "token": tokens[cl.user_session.get("user").identifier]
+                "token": os.getenv("GOOGLE_ADS_REFRESH_TOKEN")
             }
         },
         stream_mode="messages"
