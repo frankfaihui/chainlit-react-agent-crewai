@@ -23,7 +23,7 @@ build/
 Thumbs.db
 
 # Chainlit
-.chainlit/
+# .chainlit/
 chainlit.md
 
 # Logs

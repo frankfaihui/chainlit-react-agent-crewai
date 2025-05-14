@@ -1,24 +1,32 @@
 import chainlit as cl
 
-from typing import Annotated, List, Optional
+from typing import Annotated, List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent, InjectedState
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.tools import tool
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.messages import AnyMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.prebuilt.chat_agent_executor import AgentState
+from langchain.chat_models import init_chat_model
+
 
 from crews.brand_research_crew.crew import BrandResearchCrew
 from crewai.task import TaskOutput
+from dotenv import load_dotenv
+load_dotenv()
 
 class BrandResearchInfo(BaseModel):
     company: str = Field(..., description="The company name")
+    topic: Optional[str] = Field(None, description="The topic of the research")
+
+# You can provide static information to the graph at runtime, like a user_id or API credentials
+# https://langchain-ai.github.io/langgraph/how-tos/tool-calling/#access-config
 
 # Agent functions that will be called as tools
-def brand_research_agent(state: Annotated[dict, InjectedState], info: BrandResearchInfo) -> str:
+def brand_research_agent(state: Annotated[dict, InjectedState], config: RunnableConfig, info: BrandResearchInfo) -> str:
     """Do a branding research for a given company with detailed information."""
 
     # Create a message to track progress
@@ -49,7 +57,7 @@ def brand_research_agent(state: Annotated[dict, InjectedState], info: BrandResea
             cl.Message(content=f"Research completed!").send()
         )
 
-        return result.raw
+        return f"""Successfully completed the research. Research result: {result.raw}"""
     
     except Exception as e:
 
@@ -71,13 +79,13 @@ def validate_campaign_agent(state: Annotated[dict, InjectedState], brief: str) -
     """Facilitate human review and approval of the campaign brief."""
     return f"Validation Report for '{brief}': Campaign brief approved with minor adjustments to tone. Ensure all creative assets maintain consistent branding. Ready for execution upon final stakeholder sign-off."
 
-def execute_campaign_agent(state: Annotated[dict, InjectedState], channels: str) -> str:
-    """Implement the approved campaign across selected channels."""
+def google_ads_campaign_agent(state: Annotated[dict, InjectedState], channels: str) -> str:
+    """Manage google ads campaigns"""
     return f"Campaign Execution Report for channels '{channels}': Campaign launched successfully across specified channels. Initial metrics show 15% engagement rate. Weekly performance reports scheduled for stakeholder review."
 
 # https://langchain-ai.github.io/langgraph/concepts/multi_agent/#supervisor-tool-calling
 tools = [brand_research_agent, develop_strategy_agent, generate_campaign_brief_agent, 
-         validate_campaign_agent, execute_campaign_agent]
+         validate_campaign_agent, google_ads_campaign_agent]
 
 def prompt(
     state: AgentState,
@@ -87,20 +95,70 @@ def prompt(
     system_msg = f"You are a knowledgeable and friendly assistant specialized in marketing. Your job is to help users with questions strictly related to marketing. If users ask about anything else, politely steer the conversation back to marketing topics."
     return [{"role": "system", "content": system_msg}] + state["messages"]
 
-model = ChatOpenAI(model_name="gpt-4o-mini")
-memory = MemorySaver()
-agent_executor = create_react_agent(model, tools, prompt=prompt, checkpointer=memory)
+# model = ChatOpenAI(model_name="gpt-4o-mini")
+
+model = init_chat_model(
+    "openai:gpt-4o-mini",
+    # temperature=0
+)
+# memory = MemorySaver()
+agent_executor = create_react_agent(model, tools, prompt=prompt)
+
+# @cl.password_auth_callback
+# def auth_callback(username: str, password: str):
+#     # Fetch the user matching username from your database
+#     # and compare the hashed password with the value stored in the database
+#     if (username, password) == ("admin", "admin"):
+#         return cl.User(
+#             identifier="admin", metadata={"role": "admin", "provider": "credentials"}
+#         )
+#     else:
+#         return None
+
+# just for testing should store in db or redis
+tokens = {}
+
+@cl.oauth_callback
+def oauth_callback(
+  provider_id: str,
+  token: str,
+  raw_user_data: Dict[str, str],
+  default_user: cl.User,
+) -> Optional[cl.User]:
+  # Store user identifier as key with token as value
+  tokens[default_user.identifier] = token
+  
+  return default_user
+
+@cl.on_chat_start
+async def on_chat_start():
+
+    app_user = cl.user_session.get("user")
+    print(app_user)
+    # await cl.Message(f"Hello {app_user.identifier}").send()
 
 @cl.on_message
 async def on_message(message: cl.Message):
     final_answer = cl.Message(content="")
 
+    messages = cl.chat_context.to_openai()
+
     async for step, metadata in agent_executor.astream(
-        {"messages": [HumanMessage(content=message.content)]},
-        config={"configurable": {"thread_id": cl.context.session.id}},
+        {"messages": [
+            *messages,
+        ]},
+        config={
+            "configurable": {
+                "thread_id": cl.context.session.id,
+                "token": tokens[cl.user_session.get("user").identifier]
+            }
+        },
         stream_mode="messages"
     ):
         await final_answer.stream_token(step.content)
     
     await final_answer.send()
 
+@cl.on_chat_resume
+async def on_chat_resume(thread):
+    pass
