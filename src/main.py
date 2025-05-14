@@ -83,11 +83,11 @@ def validate_campaign_agent(state: Annotated[dict, InjectedState], brief: str) -
 class GoogleAdsCampaignInfo(BaseModel):
     login_customer_id: Optional[str] = Field(os.getenv("GOOGLE_ADS_LOGIN_CUSTOMER_ID"), description="The Google Ads Manager Account ID")
 
-def google_ads_campaign_agent(state: Annotated[dict, InjectedState], config: RunnableConfig, info: GoogleAdsCampaignInfo) -> str:
+def google_ads_campaign_agent(state: Annotated[dict, InjectedState], config: RunnableConfig) -> str:
     """Manage google ads campaigns, get customers"""
     import requests
     
-    login_customer_id = info.login_customer_id
+    login_customer_id = os.getenv("GOOGLE_ADS_LOGIN_CUSTOMER_ID")
     
     # Get the token from config
     token = config["configurable"].get("token")
