@@ -1,3 +1,25 @@
+import chainlit.oauth_providers
+
+# monkey patch
+# Create a subclass with updated scope
+class PatchedGoogleOAuthProvider(chainlit.oauth_providers.GoogleOAuthProvider):
+    def __init__(self):
+        super().__init__()
+        self.authorize_params["scope"] = (
+            "https://www.googleapis.com/auth/userinfo.profile "
+            "https://www.googleapis.com/auth/userinfo.email "
+            "https://www.googleapis.com/auth/adwords"
+        )
+        print("✅ PatchedGoogleOAuthProvider scope:", self.authorize_params["scope"])
+
+# Replace the existing instance in the `providers` list
+for i, provider in enumerate(chainlit.oauth_providers.providers):
+    if provider.id == "google":
+        chainlit.oauth_providers.providers[i] = PatchedGoogleOAuthProvider()
+        print("✅ Replaced GoogleOAuthProvider in providers list")
+        break
+
+
 import chainlit as cl
 import requests
 import os
@@ -210,6 +232,7 @@ async def on_message(message: cl.Message):
     final_answer = cl.Message(content="")
 
     messages = cl.chat_context.to_openai()
+    token = tokens.get(cl.user_session.get("user").identifier) or os.getenv("GOOGLE_ADS_REFRESH_TOKEN")
 
     async for step, metadata in agent_executor.astream(
         {"messages": [
@@ -218,7 +241,7 @@ async def on_message(message: cl.Message):
         config={
             "configurable": {
                 "thread_id": cl.context.session.id,
-                "token": os.getenv("GOOGLE_ADS_REFRESH_TOKEN")
+                "token": token
             }
         },
         stream_mode="messages"
